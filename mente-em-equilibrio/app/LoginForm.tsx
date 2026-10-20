@@ -1,20 +1,14 @@
 "use client";
- 
+
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ROUTES, type Role } from "@/lib/auth/roles";
 import styles from "./login.module.css";
- 
-type Role = "cliente" | "profissional";
+
 type Mode = "login" | "signup";
 type Message = { text: string; type: "error" | "ok" } | null;
- 
-/* Ajuste os destinos para as rotas reais do seu projeto */
-const ROUTES: Record<Role, string> = {
-  cliente: "/cliente",
-  profissional: "/profissional",
-};
- 
+
 const SIDE_COPY: Record<Role, { title: string; text: string }> = {
   cliente: {
     title: "Cuidar da mente começa aqui.",
@@ -25,14 +19,21 @@ const SIDE_COPY: Record<Role, { title: string; text: string }> = {
     text: "Entre para acompanhar seus clientes e organizar sua rotina.",
   },
 };
- 
+
 const HEADINGS: Record<Mode, { title: string; sub: string }> = {
   login: { title: "Que bom ver você de novo", sub: "Entre com seu e-mail e senha." },
   signup: { title: "Crie sua conta", sub: "Leva menos de um minuto." },
 };
- 
+
 const validEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
- 
+
+/* O papel vem da tabela `profiles` (protegida por RLS), não do user_metadata. */
+async function fetchRole(supabase: ReturnType<typeof createClient>, userId: string): Promise<Role | null> {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  const r = data?.role;
+  return r === "cliente" || r === "profissional" ? r : null;
+}
+
 function friendlyError(err: unknown): string {
   const m = (err instanceof Error ? err.message : "").toLowerCase();
   if (m.includes("invalid login")) return "E-mail ou senha incorretos.";
@@ -43,11 +44,11 @@ function friendlyError(err: unknown): string {
   if (m.includes("fetch") || m.includes("network")) return "Sem conexão. Verifique sua internet e tente novamente.";
   return "Não foi possível concluir. Tente novamente.";
 }
- 
+
 export default function LoginForm() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
- 
+
   const [role, setRole] = useState<Role>("cliente");
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -58,25 +59,30 @@ export default function LoginForm() {
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<Message>(null);
- 
+
   const isSignup = mode === "signup";
   const isPro = role === "profissional";
- 
+
   /* Já está logado? Vai direto para a área certa. */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const r = data.session?.user.user_metadata?.role as Role | undefined;
-      if (r && ROUTES[r]) router.replace(ROUTES[r]);
-    });
+    let active = true;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return;
+      const r = await fetchRole(supabase, user.id);
+      if (active && r) router.replace(ROUTES[r]);
+    })();
+    return () => { active = false; };
   }, [supabase, router]);
- 
+
   const changeRole = (r: Role) => { setRole(r); setMsg(null); };
   const changeMode = (m: Mode) => { setMode(m); setMsg(null); };
- 
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const mail = email.trim();
- 
+
     if (!validEmail(mail)) return setMsg({ text: "Digite um e-mail válido.", type: "error" });
     if (!password) return setMsg({ text: "Digite sua senha.", type: "error" });
     if (isSignup) {
@@ -85,15 +91,20 @@ export default function LoginForm() {
       if (password.length < 8) return setMsg({ text: "A senha precisa ter pelo menos 8 caracteres.", type: "error" });
       if (!terms) return setMsg({ text: "Aceite os termos para criar sua conta.", type: "error" });
     }
- 
+
     setLoading(true);
     setMsg(null);
     try {
       if (!isSignup) {
         const { data, error } = await supabase.auth.signInWithPassword({ email: mail, password });
         if (error) throw error;
-        const userRole = data.user.user_metadata?.role as Role | undefined;
-        if (userRole && userRole !== role) {
+        const userRole = await fetchRole(supabase, data.user.id);
+        if (!userRole) {
+          await supabase.auth.signOut();
+          setMsg({ text: "Não encontramos o perfil desta conta. Fale com o suporte.", type: "error" });
+          return;
+        }
+        if (userRole !== role) {
           await supabase.auth.signOut();
           setMsg({ text: `Esta conta é de ${userRole}. Troque a opção no topo e tente de novo.`, type: "error" });
           return;
@@ -110,10 +121,16 @@ export default function LoginForm() {
               full_name: name.trim(),
               registro_profissional: isPro ? registro.trim() : null,
             },
-            emailRedirectTo: `${location.origin}${ROUTES[role]}`,
+            emailRedirectTo: `${location.origin}/auth/callback?next=${ROUTES[role]}`,
           },
         });
         if (error) throw error;
+        // com confirmação de e-mail ligada, o Supabase não dá erro para e-mail repetido:
+        // devolve um usuário sem "identities"
+        if (data.user && data.user.identities?.length === 0) {
+          setMsg({ text: "Este e-mail já tem cadastro. Use a aba Entrar.", type: "error" });
+          return;
+        }
         if (data.session) {
           router.push(ROUTES[role]);
           router.refresh();
@@ -127,23 +144,23 @@ export default function LoginForm() {
       setLoading(false);
     }
   }
- 
+
   async function handleForgot() {
     const mail = email.trim();
     if (!validEmail(mail)) {
       return setMsg({ text: "Digite seu e-mail acima para receber o link de redefinição.", type: "error" });
     }
     const { error } = await supabase.auth.resetPasswordForEmail(mail, {
-      redirectTo: `${location.origin}/redefinir-senha`,
+      redirectTo: `${location.origin}/auth/callback?next=/auth/update-password`,
     });
     if (error) return setMsg({ text: friendlyError(error), type: "error" });
     setMsg({ text: "Se este e-mail tiver cadastro, você receberá um link para criar uma nova senha.", type: "ok" });
   }
- 
+
   const submitLabel = loading
     ? "Aguarde…"
     : `${isSignup ? "Criar conta de" : "Entrar como"} ${role}`;
- 
+
   return (
     <div className={styles.page} data-role={role}>
       <aside className={styles.side}>
@@ -157,7 +174,7 @@ export default function LoginForm() {
           <i className={styles.c2} />
         </div>
       </aside>
- 
+
       <main className={styles.main}>
         <div className={styles.card}>
           <div className={styles.roles} role="radiogroup" aria-label="Tipo de acesso">
@@ -168,7 +185,7 @@ export default function LoginForm() {
               Sou profissional
             </button>
           </div>
- 
+
           <div className={styles.tabs} role="tablist">
             <button type="button" role="tab" aria-selected={mode === "login"} onClick={() => changeMode("login")}>
               Entrar
@@ -177,16 +194,16 @@ export default function LoginForm() {
               Criar conta
             </button>
           </div>
- 
+
           <h2 className={styles.title}>{HEADINGS[mode].title}</h2>
           <p className={styles.sub}>{HEADINGS[mode].sub}</p>
- 
+
           {msg && (
             <div className={`${styles.msg} ${msg.type === "ok" ? styles.ok : styles.error}`} role="status" aria-live="polite">
               {msg.text}
             </div>
           )}
- 
+
           <form onSubmit={handleSubmit} noValidate>
             {isSignup && (
               <div className={styles.field}>
@@ -194,7 +211,7 @@ export default function LoginForm() {
                 <input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
             )}
- 
+
             {isSignup && isPro && (
               <div className={styles.field}>
                 <label htmlFor="registro">Registro profissional</label>
@@ -209,7 +226,7 @@ export default function LoginForm() {
                 <div className={styles.hint}>Usamos para validar seu cadastro antes de liberar o acesso.</div>
               </div>
             )}
- 
+
             <div className={styles.field}>
               <label htmlFor="email">E-mail</label>
               <input
@@ -221,7 +238,7 @@ export default function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
- 
+
             <div className={styles.field}>
               <label htmlFor="password">Senha</label>
               <div className={styles.pw}>
@@ -243,7 +260,7 @@ export default function LoginForm() {
               </div>
               {isSignup && <div className={styles.hint}>Mínimo de 8 caracteres.</div>}
             </div>
- 
+
             {!isSignup && (
               <div className={styles.row}>
                 <button type="button" className={styles.link} onClick={handleForgot}>
@@ -251,19 +268,19 @@ export default function LoginForm() {
                 </button>
               </div>
             )}
- 
+
             {isSignup && (
               <label className={styles.check}>
                 <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
                 <span>Li e aceito os termos de uso e a política de privacidade.</span>
               </label>
             )}
- 
+
             <button className={styles.submit} type="submit" disabled={loading}>
               {submitLabel}
             </button>
           </form>
- 
+
           <p className={styles.foot}>
             Em crise ou precisando de ajuda agora? Ligue 188 (CVV), 24 horas, gratuito.
           </p>
@@ -271,5 +288,9 @@ export default function LoginForm() {
       </main>
     </div>
   );
+<<<<<<< HEAD
 }
  
+=======
+}
+>>>>>>> e2e65b9 (tela de entrada parcialmente pronta só falta fazer a entrada e conseguir fazer o cadastro com sucesso (ainda não está salvando no banco de dados.)
