@@ -1,0 +1,218 @@
+.back {
+  align-self: flex-start;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.cta:hover {
+  background: var(--accent-dark);
+}
+
+.error {
+  margin: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fdecea;
+  color: #8a1c14;
+  border: 1px solid #f3c1bd;
+  font-size: 0.95rem;
+}
+
+/* ---------- Listas ---------- */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.groupTag {
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.past {
+  opacity: 0.8;
+}
+
+.badge {
+  width: 64px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  line-height: 1.1;
+}
+
+.badgeWeek {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badgeDay {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.badgeMonth {
+  font-size: 0.75rem;
+}
+
+.timeBox {
+  width: 72px;
+  flex-shrink: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--accent-dark);
+}
+
+.info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.who {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.chip {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chipNext {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+.chipDone {
+  background: #e3f3ea;
+  color: #1d6b43;
+}
+
+.chipOff {
+  background: #fdecea;
+  color: #8a1c14;
+}
+
+.chipMuted {
+  background: #eef3f4;
+  color: #566d75;
+}
+
+.empty {
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty p {
+  margin: 0;
+}
+
+/* ---------- Lista pequena (início do profissional) ---------- */
+.mini {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.miniHora {
+  font-weight: 700;
+  color: var(--accent-dark);
+  margin-right: 10px;
+}

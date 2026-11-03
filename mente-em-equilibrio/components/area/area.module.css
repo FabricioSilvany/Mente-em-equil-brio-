@@ -40,9 +40,8 @@
 }
 
 .headerInner {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 14px clamp(16px, 4vw, 32px);
+  width: 100%;
+  padding: 14px clamp(16px, 2.5vw, 28px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -254,4 +253,51 @@
 
 .helpLink:hover {
   background: var(--accent-soft);
+}
+
+/* ---------- Área do profissional ---------- */
+.page[data-role="profissional"] {
+  --accent: #3d4f9a;
+  --accent-dark: #303f80;
+  --accent-soft: #e3e7f5;
+}
+
+.status {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.statusOk {
+  background: #e3f3ea;
+  color: #1d6b43;
+}
+
+.statusPending {
+  background: #fff1cf;
+  color: #6b4a00;
+}
+
+.notice {
+  background: #fff8e6;
+  border: 1px solid #f0d9a0;
+  border-radius: 16px;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.noticeTitle {
+  margin: 0 0 4px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #5c4510;
+}
+
+.noticeText {
+  margin: 0;
+  max-width: 64ch;
+  color: #6b5520;
 }

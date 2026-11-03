@@ -1,31 +1,43 @@
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/require-roles";
-import { LogoutButton } from "@/components/logout-button";
+import { createClient } from "@/lib/supabase/server";
+import { AreaHeader } from "@/components/area/area-header";
+import { ProfissionalHome } from "@/components/profissional/profissional-home";
+import { chaveDoDia, type Consulta } from "@/lib/agenda";
+import styles from "@/components/area/area.module.css";
 
 async function Content() {
   const { name, email, verificado } = await requireRole("profissional");
+
+  const displayName = name?.trim() || email || "";
+  const firstName = displayName.split(/[\s@]/)[0];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("minhas_consultas");
+  if (error) console.error("Erro ao buscar consultas:", error);
+
+  const agora = Date.now();
+  const hojeChave = chaveDoDia(new Date(agora));
+  const fim = (c: Consulta) => new Date(c.inicio).getTime() + c.duracao_min * 60_000;
+
+  const hoje = ((error ? [] : (data ?? [])) as Consulta[]).filter(
+    (c) => c.status === "agendada" && chaveDoDia(c.inicio) === hojeChave && fim(c) > agora,
+  );
+
   return (
-    <div className="flex flex-col gap-4 items-start">
-      <h1 className="text-2xl font-bold">Olá, {name ?? email}!</h1>
-      {verificado ? (
-        <p className="text-muted-foreground">Esta é a área do profissional.</p>
-      ) : (
-        <p className="rounded-md bg-accent p-3 text-sm">
-          Seu cadastro está em análise. Assim que o registro profissional for
-          validado, o acesso completo será liberado.
-        </p>
-      )}
-      <LogoutButton />
-    </div>
+    <>
+      <AreaHeader displayName={displayName} />
+      <ProfissionalHome firstName={firstName} verificado={verificado} hoje={hoje} />
+    </>
   );
 }
 
 export default function ProfissionalPage() {
   return (
-    <main className="min-h-svh p-6 md:p-10">
-      <Suspense fallback={<p>Carregando…</p>}>
+    <div className={styles.page} data-role="profissional">
+      <Suspense fallback={<p className={styles.loading}>Carregando…</p>}>
         <Content />
       </Suspense>
-    </main>
+    </div>
   );
 }

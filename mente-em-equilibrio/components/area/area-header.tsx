@@ -1,7 +1,7 @@
 import { LogoutButton } from "@/components/logout-button";
-import styles from "./cliente.module.css";
+import styles from "./area.module.css";
 
-export function ClienteHeader({ displayName }: { displayName: string }) {
+export function AreaHeader({ displayName }: { displayName: string }) {
   const initial = displayName.trim().charAt(0).toUpperCase() || "?";
 
   return (
@@ -17,7 +17,7 @@ export function ClienteHeader({ displayName }: { displayName: string }) {
           <LogoutButton
             label="Sair"
             variant="outline"
-            className="border-[#cfdde0] bg-white text-[#16303a] hover:bg-[#e1eff0] hover:text-[#16303a]"
+            className="border-[#cfdde0] bg-white text-[#16303a] hover:bg-[var(--accent-soft)] hover:text-[#16303a]"
           />
         </div>
       </div>

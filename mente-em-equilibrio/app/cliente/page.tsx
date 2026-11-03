@@ -1,24 +1,29 @@
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/require-roles";
-import { LogoutButton } from "@/components/logout-button";
+import { AreaHeader } from "@/components/area/area-header";
+import { ClienteHome } from "@/components/cliente/cliente-home";
+import styles from "@/components/area/area.module.css";
 
 async function Content() {
   const { name, email } = await requireRole("cliente");
+
+  const displayName = name?.trim() || email || "";
+  const firstName = displayName.split(/[\s@]/)[0];
+
   return (
-    <div className="flex flex-col gap-4 items-start">
-      <h1 className="text-2xl font-bold">Olá, {name ?? email}!</h1>
-      <p className="text-muted-foreground">Esta é a área do cliente.</p>
-      <LogoutButton />
-    </div>
+    <>
+      <AreaHeader displayName={displayName} />
+      <ClienteHome firstName={firstName} />
+    </>
   );
 }
 
 export default function ClientePage() {
   return (
-    <main className="min-h-svh p-6 md:p-10">
-      <Suspense fallback={<p>Carregando…</p>}>
+    <div className={styles.page} data-role="cliente">
+      <Suspense fallback={<p className={styles.loading}>Carregando…</p>}>
         <Content />
       </Suspense>
-    </main>
+    </div>
   );
 }

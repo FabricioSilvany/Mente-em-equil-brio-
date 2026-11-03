@@ -112,6 +112,19 @@ export default function LoginForm() {
         router.push(ROUTES[role]);
         router.refresh();
       } else {
+                if (isPro) {
+          const { data: livre, error: rpcError } = await supabase.rpc("registro_disponivel", {
+            p_registro: registro.trim(),
+          });
+          if (rpcError) throw rpcError;
+          if (livre === false) {
+            setMsg({
+              text: "Este registro profissional já está cadastrado. Se a conta é sua, use a aba Entrar.",
+              type: "error",
+            });
+            return;
+          }
+        }
         const { data, error } = await supabase.auth.signUp({
           email: mail,
           password,
