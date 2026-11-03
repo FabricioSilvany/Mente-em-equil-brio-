@@ -1,10 +1,17 @@
 "use client";
 
+import type { ComponentProps } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
-export function LogoutButton() {
+type Props = {
+  label?: string;
+  className?: string;
+  variant?: ComponentProps<typeof Button>["variant"];
+};
+
+export function LogoutButton({ label = "Logout", className, variant }: Props) {
   const router = useRouter();
 
   const logout = async () => {
@@ -14,5 +21,9 @@ export function LogoutButton() {
     router.refresh();
   };
 
-  return <Button onClick={logout}>Logout</Button>;
+  return (
+    <Button onClick={logout} className={className} variant={variant}>
+      {label}
+    </Button>
+  );
 }

@@ -287,10 +287,5 @@ export default function LoginForm() {
         </div>
       </main>
     </div>
-  );
-<<<<<<< HEAD
+   );
 }
- 
-=======
-}
->>>>>>> e2e65b9 (tela de entrada parcialmente pronta só falta fazer a entrada e conseguir fazer o cadastro com sucesso (ainda não está salvando no banco de dados.)

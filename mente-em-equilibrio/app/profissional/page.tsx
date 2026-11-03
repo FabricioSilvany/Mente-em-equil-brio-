@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { requireRole } from "@/lib/auth/require-role";
+import { requireRole } from "@/lib/auth/require-roles";
 import { LogoutButton } from "@/components/logout-button";
 
 async function Content() {
