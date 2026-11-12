@@ -34,11 +34,13 @@ const ATALHOS: Atalho[] = [
     icon: HeartHandshake,
     title: "Meus profissionais",
     text: "Veja quem acompanha o seu cuidado.",
+    href: "/cliente/profissionais",
   },
   {
     icon: NotebookPen,
     title: "Diário de bem-estar",
     text: "Registre como você se sente, no seu ritmo.",
+    href: "/cliente/diario",
   },
   {
     icon: UserRound,

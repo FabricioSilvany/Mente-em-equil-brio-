@@ -21,7 +21,8 @@ const ATALHOS: Atalho[] = [
   {
     icon: Users,
     title: "Meus pacientes",
-    text: "Acompanhe quem está sob o seu cuidado.",
+    text: "Veja seus pacientes, convide novos e leia o diário compartilhado.",
+    href: "/profissional/pacientes",
   },
   {
     icon: Clock,

@@ -29,6 +29,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "app/profissional/pacientes"  ],
   "exclude": ["node_modules"]
 }
