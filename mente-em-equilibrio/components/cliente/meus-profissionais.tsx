@@ -6,9 +6,24 @@ import { createClient } from "@/lib/supabase/client";
 import { dataCurta, type Leitura, type ProfissionalVinculado } from "@/lib/diario";
 import { formatarData, formatarHora } from "@/lib/agenda";
 import styles from "../area/diario.module.css";
+import check from "../area/checkin.module.css";
 
 type Msg = { tipo: "erro" | "ok"; texto: string } | null;
+type Tipo = "diario" | "checkin";
 type Props = { profissionais: ProfissionalVinculado[]; leituras: Leitura[] };
+
+const TEXTOS: Record<Tipo, { titulo: string; oque: string; rpc: string }> = {
+  diario: {
+    titulo: "Diário",
+    oque: "as entradas do seu diário (humor e texto)",
+    rpc: "definir_compartilhamento",
+  },
+  checkin: {
+    titulo: "Check-ins",
+    oque: "os seus check-ins (humor, motivos, lugares e observação)",
+    rpc: "definir_compartilhamento_checkins",
+  },
+};
 
 export function MeusProfissionais({ profissionais, leituras }: Props) {
   const router = useRouter();
@@ -42,11 +57,11 @@ export function MeusProfissionais({ profissionais, leituras }: Props) {
     router.refresh();
   }
 
-  async function alterar(id: string, ativo: boolean, anteriores = false) {
-    setOcupado(id);
+  async function alterar(tipo: Tipo, id: string, ativo: boolean, anteriores = false) {
+    setOcupado(`${id}:${tipo}`);
     setMsg(null);
 
-    const { error } = await supabase.rpc("definir_compartilhamento", {
+    const { error } = await supabase.rpc(TEXTOS[tipo].rpc, {
       p_profissional: id,
       p_ativo: ativo,
       p_incluir_anteriores: anteriores,
@@ -57,9 +72,98 @@ export function MeusProfissionais({ profissionais, leituras }: Props) {
     setAbrindo(null);
     setMsg({
       tipo: "ok",
-      texto: ativo ? "Compartilhamento ativado." : "Você parou de compartilhar o diário.",
+      texto: ativo
+        ? `Compartilhamento de ${TEXTOS[tipo].titulo.toLowerCase()} ativado.`
+        : `Você parou de compartilhar ${TEXTOS[tipo].titulo.toLowerCase()}.`,
     });
     router.refresh();
+  }
+
+  function bloco(p: ProfissionalVinculado, tipo: Tipo) {
+    const id = p.profissional_id;
+    const chave = `${id}:${tipo}`;
+    const ativo = tipo === "diario" ? p.diario_compartilhado : p.checkins_compartilhado;
+    const anteriores = tipo === "diario" ? p.incluir_anteriores : p.checkins_incluir_anteriores;
+    const t = TEXTOS[tipo];
+
+    return (
+      <div className={check.share} key={tipo}>
+        <div className={check.shareHead}>
+          <p className={check.shareTitle}>{t.titulo}</p>
+          <span className={`${styles.chip} ${ativo ? styles.chipOn : styles.chipOff}`}>
+            {ativo ? "Compartilhado" : "Não compartilhado"}
+          </span>
+        </div>
+
+        {ativo ? (
+          <>
+            <p className={styles.muted}>
+              {p.nome} pode ver {t.oque}{" "}
+              {anteriores ? "(inclusive o que veio antes do compartilhamento)" : "feitos a partir do compartilhamento"},
+              exceto o que você marcou como “Só para mim”.
+            </p>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              disabled={ocupado === chave}
+              onClick={() => alterar(tipo, id, false)}
+            >
+              {ocupado === chave ? "Aguarde…" : "Parar de compartilhar"}
+            </button>
+          </>
+        ) : abrindo === chave ? (
+          <div className={styles.consent}>
+            <p>
+              <strong>{p.nome}</strong> poderá ver {t.oque}, exceto o que você marcar como “Só para mim”. Você pode
+              parar de compartilhar quando quiser, e verá aqui quem viu e quando.
+            </p>
+            <label className={styles.check}>
+              <input
+                type="radio"
+                name={`incluir-${chave}`}
+                checked={!incluir}
+                onChange={() => setIncluir(false)}
+              />
+              <span>Somente o que eu registrar a partir de agora</span>
+            </label>
+            <label className={styles.check}>
+              <input
+                type="radio"
+                name={`incluir-${chave}`}
+                checked={incluir}
+                onChange={() => setIncluir(true)}
+              />
+              <span>Incluir também o que eu já registrei</span>
+            </label>
+            <div className={styles.inline}>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={ocupado === chave}
+                onClick={() => alterar(tipo, id, true, incluir)}
+              >
+                {ocupado === chave ? "Aguarde…" : "Confirmar compartilhamento"}
+              </button>
+              <button type="button" className={styles.btnGhost} onClick={() => setAbrindo(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={styles.btnGhost}
+            onClick={() => {
+              setAbrindo(chave);
+              setIncluir(false);
+              setMsg(null);
+            }}
+          >
+            Compartilhar {t.titulo.toLowerCase()}
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -82,93 +186,16 @@ export function MeusProfissionais({ profissionais, leituras }: Props) {
           </p>
         ) : (
           <ul className={styles.list}>
-            {profissionais.map((p) => {
-              const id = p.profissional_id;
-              return (
-                <li key={id} className={styles.entry}>
-                  <div className={styles.entryHead}>
-                    <div>
-                      <p className={styles.name}>{p.nome}</p>
-                      <p className={styles.muted}>Vinculado desde {dataCurta(p.desde)}</p>
-                    </div>
-                    <span className={`${styles.chip} ${p.diario_compartilhado ? styles.chipOn : styles.chipOff}`}>
-                      {p.diario_compartilhado ? "Diário compartilhado" : "Diário não compartilhado"}
-                    </span>
-                  </div>
-
-                  {p.diario_compartilhado ? (
-                    <>
-                      <p className={styles.muted}>
-                        {p.nome} pode ler as suas entradas{" "}
-                        {p.incluir_anteriores
-                          ? "(inclusive as anteriores ao compartilhamento)"
-                          : "feitas a partir do compartilhamento"}
-                        , exceto as marcadas como “Só para mim”.
-                      </p>
-                      <button
-                        type="button"
-                        className={styles.btnGhost}
-                        disabled={ocupado === id}
-                        onClick={() => alterar(id, false)}
-                      >
-                        {ocupado === id ? "Aguarde…" : "Parar de compartilhar"}
-                      </button>
-                    </>
-                  ) : abrindo === id ? (
-                    <div className={styles.consent}>
-                      <p>
-                        <strong>{p.nome}</strong> poderá ler as entradas do seu diário (humor e texto), exceto as
-                        que você marcar como “Só para mim”. Você pode parar de compartilhar quando quiser, e
-                        verá aqui quem leu e quando.
-                      </p>
-                      <label className={styles.check}>
-                        <input
-                          type="radio"
-                          name={`incluir-${id}`}
-                          checked={!incluir}
-                          onChange={() => setIncluir(false)}
-                        />
-                        <span>Somente as entradas a partir de agora</span>
-                      </label>
-                      <label className={styles.check}>
-                        <input
-                          type="radio"
-                          name={`incluir-${id}`}
-                          checked={incluir}
-                          onChange={() => setIncluir(true)}
-                        />
-                        <span>Incluir também as entradas que já escrevi</span>
-                      </label>
-                      <div className={styles.inline}>
-                        <button
-                          type="button"
-                          className={styles.btn}
-                          disabled={ocupado === id}
-                          onClick={() => alterar(id, true, incluir)}
-                        >
-                          {ocupado === id ? "Aguarde…" : "Confirmar compartilhamento"}
-                        </button>
-                        <button type="button" className={styles.btnGhost} onClick={() => setAbrindo(null)}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className={styles.btnGhost}
-                      onClick={() => {
-                        setAbrindo(id);
-                        setIncluir(false);
-                        setMsg(null);
-                      }}
-                    >
-                      Compartilhar meu diário
-                    </button>
-                  )}
-                </li>
-              );
-            })}
+            {profissionais.map((p) => (
+              <li key={p.profissional_id} className={styles.entry}>
+                <div>
+                  <p className={styles.name}>{p.nome}</p>
+                  <p className={styles.muted}>Vinculado desde {dataCurta(p.desde)}</p>
+                </div>
+                {bloco(p, "diario")}
+                {bloco(p, "checkin")}
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -196,18 +223,26 @@ export function MeusProfissionais({ profissionais, leituras }: Props) {
 
       <section aria-labelledby="quem-leu">
         <h2 id="quem-leu" className={styles.cardTitle} style={{ marginBottom: 12 }}>
-          Quem leu o seu diário
+          Quem viu os seus dados
         </h2>
         {leituras.length === 0 ? (
-          <p className={styles.empty}>Ninguém leu o seu diário até agora.</p>
+          <p className={styles.empty}>Ninguém viu o seu diário ou os seus check-ins até agora.</p>
         ) : (
           <ul className={styles.list}>
             {leituras.map((l, i) => (
               <li key={`${l.lido_em}-${i}`} className={styles.entry}>
-                <p className={styles.name}>{l.nome}</p>
+                <p className={styles.name}>
+                  {l.nome} · {l.tipo === "checkin" ? "viu os check-ins" : "leu o diário"}
+                </p>
                 <p className={styles.muted}>
                   {formatarData(l.lido_em)}, às {formatarHora(l.lido_em)} · {l.qtd}{" "}
-                  {l.qtd === 1 ? "entrada disponível" : "entradas disponíveis"}
+                  {l.tipo === "checkin"
+                    ? l.qtd === 1
+                      ? "check-in disponível"
+                      : "check-ins disponíveis"
+                    : l.qtd === 1
+                      ? "entrada disponível"
+                      : "entradas disponíveis"}
                 </p>
               </li>
             ))}

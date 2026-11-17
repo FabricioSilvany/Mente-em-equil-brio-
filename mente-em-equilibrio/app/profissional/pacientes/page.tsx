@@ -64,32 +64,40 @@ async function Content() {
             </p>
           ) : (
             <ul className={styles.list}>
-              {pacientes.map((p) => (
-                <li key={p.paciente_id} className={styles.entry}>
-                  <div className={styles.entryHead}>
-                    <div>
-                      <p className={styles.name}>{p.nome}</p>
-                      <p className={styles.muted}>
-                        Paciente desde {dataCurta(p.desde)} ·{" "}
-                        {p.proxima_consulta
-                          ? `próxima consulta: ${formatarDataHora(p.proxima_consulta)}`
-                          : "sem consulta marcada"}
-                      </p>
+              {pacientes.map((p) => {
+                const algum = p.diario_compartilhado || p.checkins_compartilhado;
+                return (
+                  <li key={p.paciente_id} className={styles.entry}>
+                    <div className={styles.entryHead}>
+                      <div>
+                        <p className={styles.name}>{p.nome}</p>
+                        <p className={styles.muted}>
+                          Paciente desde {dataCurta(p.desde)} ·{" "}
+                          {p.proxima_consulta
+                            ? `próxima consulta: ${formatarDataHora(p.proxima_consulta)}`
+                            : "sem consulta marcada"}
+                        </p>
+                      </div>
+                      <div className={styles.chips}>
+                        <span className={`${styles.chip} ${p.diario_compartilhado ? styles.chipOn : styles.chipOff}`}>
+                          Diário {p.diario_compartilhado ? "compartilhado" : "não compartilhado"}
+                        </span>
+                        <span className={`${styles.chip} ${p.checkins_compartilhado ? styles.chipOn : styles.chipOff}`}>
+                          Check-ins {p.checkins_compartilhado ? "compartilhados" : "não compartilhados"}
+                        </span>
+                      </div>
                     </div>
-                    <span className={`${styles.chip} ${p.diario_compartilhado ? styles.chipOn : styles.chipOff}`}>
-                      {p.diario_compartilhado ? "Diário compartilhado" : "Diário não compartilhado"}
-                    </span>
-                  </div>
 
-                  {p.diario_compartilhado ? (
-                    <Link href={`/profissional/pacientes/${p.paciente_id}`} className={styles.link}>
-                      Ler diário →
-                    </Link>
-                  ) : (
-                    <p className={styles.muted}>O paciente ainda não compartilhou o diário com você.</p>
-                  )}
-                </li>
-              ))}
+                    {algum ? (
+                      <Link href={`/profissional/pacientes/${p.paciente_id}`} className={styles.link}>
+                        Ver o que o paciente compartilhou →
+                      </Link>
+                    ) : (
+                      <p className={styles.muted}>O paciente ainda não compartilhou dados com você.</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

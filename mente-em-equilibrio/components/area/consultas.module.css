@@ -216,3 +216,126 @@
   color: var(--accent-dark);
   margin-right: 10px;
 }
+
+
+/* ---------- Acabamento (padrão visual do site) ---------- */
+.card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.empty {
+  border-radius: var(--radius);
+}
+
+.badge {
+  border-radius: 14px;
+}
+
+.cta {
+  border-radius: 999px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* ---------- Cancelamento ---------- */
+.actions {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.cancelBtn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-height: 40px;
+  padding: 6px 18px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: #8a1c14;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.cancelBtn:hover {
+  background: #fdecea;
+  border-color: #f3c1bd;
+}
+
+.confirmBox {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fdf3f2;
+  border: 1px solid #f3c1bd;
+}
+
+.confirmBox p {
+  margin: 0;
+  color: #5c1a15;
+  font-size: 0.92rem;
+}
+
+.confirmRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirmYes,
+.confirmNo {
+  font: inherit;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.confirmYes {
+  border: 0;
+  background: #b3261e;
+  color: #fff;
+}
+
+.confirmYes:hover:not(:disabled) {
+  background: #8f1e18;
+}
+
+.confirmYes:disabled,
+.confirmNo:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.confirmNo {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+.cancelNote {
+  flex-basis: 100%;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cancelErr {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8a1c14;
+  font-size: 0.9rem;
+}

@@ -28,6 +28,8 @@ export type ProfissionalVinculado = {
   desde: string;
   diario_compartilhado: boolean;
   incluir_anteriores: boolean;
+  checkins_compartilhado: boolean;
+  checkins_incluir_anteriores: boolean;
 };
 
 export type PacienteVinculado = {
@@ -35,10 +37,11 @@ export type PacienteVinculado = {
   nome: string;
   desde: string;
   diario_compartilhado: boolean;
+  checkins_compartilhado: boolean;
   proxima_consulta: string | null;
 };
 
-export type Leitura = { nome: string; lido_em: string; qtd: number };
+export type Leitura = { nome: string; lido_em: string; qtd: number; tipo: "diario" | "checkin" };
 
 export function dataCurta(iso: string): string {
   return new Intl.DateTimeFormat("pt-BR", {

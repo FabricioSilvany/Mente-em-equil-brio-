@@ -1,10 +1,12 @@
 import { chaveDoDia, formatarData, formatarHora, type Consulta } from "@/lib/agenda";
+import { CancelarConsulta } from "../area/cancelar-consulta";
 import styles from "../area/consultas.module.css";
 
 type Props = {
   consultas: Consulta[]; // já em ordem de data
   hoje: string; // "2026-11-10"
   amanha: string;
+  agora: number;
 };
 
 type Grupo = { chave: string; itens: Consulta[] };
@@ -22,7 +24,7 @@ function fimDaConsulta(c: Consulta) {
   return new Date(new Date(c.inicio).getTime() + c.duracao_min * 60_000).toISOString();
 }
 
-export function AgendaProfissional({ consultas, hoje, amanha }: Props) {
+export function AgendaProfissional({ consultas, hoje, amanha, agora }: Props) {
   const grupos = agrupar(consultas);
 
   if (grupos.length === 0) {
@@ -56,6 +58,10 @@ export function AgendaProfissional({ consultas, hoje, amanha }: Props) {
                       Paciente · até {formatarHora(fimDaConsulta(c))} · {c.duracao_min} min
                     </p>
                   </div>
+
+                  {new Date(c.inicio).getTime() > agora && (
+                    <CancelarConsulta consultaId={c.id} quem="profissional" />
+                  )}
                 </li>
               ))}
             </ul>

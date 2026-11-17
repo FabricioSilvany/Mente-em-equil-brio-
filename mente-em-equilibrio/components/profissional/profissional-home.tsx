@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Clock, UserRound, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, UserRound, Users, type LucideIcon } from "lucide-react";
 import { formatarHora, type Consulta } from "@/lib/agenda";
 import styles from "../area/area.module.css";
 import lista from "../area/consultas.module.css";
@@ -9,6 +9,7 @@ type Atalho = {
   title: string;
   text: string;
   href?: string;
+  semValidacao?: boolean; // disponível mesmo antes da validação do cadastro
 };
 
 const ATALHOS: Atalho[] = [
@@ -32,7 +33,9 @@ const ATALHOS: Atalho[] = [
   {
     icon: UserRound,
     title: "Perfil profissional",
-    text: "Mantenha sua apresentação e seus dados em dia.",
+    text: "Consulte os dados do seu cadastro.",
+    href: "/profissional/perfil",
+    semValidacao: true,
   },
 ];
 
@@ -45,20 +48,13 @@ type Props = {
 export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
   return (
     <main className={styles.container}>
-      <section>
+      <section className={styles.hero}>
         <p className={styles.eyebrow}>Área profissional</p>
-        <h1 className={styles.title}>
-          {firstName ? `Olá, ${firstName}` : "Olá"}
-        </h1>
+        <h1 className={styles.title}>{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
         <p className={styles.lead}>
-          Aqui você organiza a sua rotina e acompanha o cuidado dos seus
-          pacientes.
+          Aqui você organiza a sua rotina e acompanha o cuidado dos seus pacientes.
         </p>
-        <span
-          className={`${styles.status} ${
-            verificado ? styles.statusOk : styles.statusPending
-          }`}
-        >
+        <span className={`${styles.status} ${verificado ? styles.statusOk : styles.statusPending}`}>
           {verificado ? "Cadastro verificado" : "Cadastro em análise"}
         </span>
       </section>
@@ -70,9 +66,7 @@ export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
               Atendimentos de hoje
             </h2>
             {hoje.length === 0 ? (
-              <p className={styles.panelText}>
-                Você não tem atendimentos agendados para hoje.
-              </p>
+              <p className={styles.panelText}>Você não tem atendimentos agendados para hoje.</p>
             ) : (
               <ul className={lista.mini}>
                 {hoje.map((c) => (
@@ -94,9 +88,8 @@ export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
             Estamos validando o seu registro profissional
           </h2>
           <p className={styles.noticeText}>
-            Assim que a validação for concluída, o acesso completo será
-            liberado nesta tela. Enquanto isso, você já pode explorar como
-            ela vai ficar.
+            Assim que a validação for concluída, o acesso completo será liberado nesta tela. Enquanto isso, você
+            já pode explorar como ela vai ficar.
           </p>
         </section>
       )}
@@ -106,31 +99,31 @@ export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
           O que você quer fazer?
         </h2>
         <div className={styles.grid}>
-          {ATALHOS.map(({ icon: Icon, title, text, href }) => {
-            const ativo = Boolean(href) && verificado;
+          {ATALHOS.map(({ icon: Icon, title, text, href, semValidacao }) => {
+            const ativo = Boolean(href) && (verificado || Boolean(semValidacao));
             const conteudo = (
               <>
                 <span className={styles.icon} aria-hidden="true">
-                  <Icon size={22} />
+                  <Icon size={24} />
                 </span>
                 <h3 className={styles.itemTitle}>{title}</h3>
                 <p className={styles.itemText}>{text}</p>
-                <span className={styles.soon}>
-                  {!verificado ? "Após validação" : href ? "Disponível" : "Em breve"}
-                </span>
+                {ativo ? (
+                  <span className={styles.open}>
+                    Abrir <ArrowRight size={16} aria-hidden="true" />
+                  </span>
+                ) : (
+                  <span className={styles.soon}>{!verificado ? "Após validação" : "Em breve"}</span>
+                )}
               </>
             );
 
             return ativo && href ? (
-              <Link
-                key={title}
-                href={href}
-                className={`${styles.item} transition-colors hover:border-[var(--accent)]`}
-              >
+              <Link key={title} href={href} className={`${styles.item} ${styles.itemLink}`}>
                 {conteudo}
               </Link>
             ) : (
-              <article key={title} className={styles.item}>
+              <article key={title} className={`${styles.item} ${styles.itemSoon}`}>
                 {conteudo}
               </article>
             );

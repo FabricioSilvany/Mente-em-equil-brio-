@@ -25,6 +25,7 @@ export type Consulta = {
   status: "agendada" | "cancelada" | "concluida";
   papel: "paciente" | "profissional";
   outro_nome: string;
+  cancelada_por?: "paciente" | "profissional" | null;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");

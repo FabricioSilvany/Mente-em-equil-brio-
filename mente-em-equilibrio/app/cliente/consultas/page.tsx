@@ -53,7 +53,7 @@ async function Content() {
           </p>
         )}
 
-        <ListaConsultas proximas={proximas} historico={historico} />
+              <ListaConsultas proximas={proximas} historico={historico} agora={agora} />
       </main>
     </>
   );

@@ -50,7 +50,7 @@ async function Content() {
           </p>
         )}
 
-        <AgendaProfissional consultas={proximas} hoje={hoje} amanha={amanha} />
+           <AgendaProfissional consultas={proximas} hoje={hoje} amanha={amanha} agora={agora} />
       </main>
     </>
   );
