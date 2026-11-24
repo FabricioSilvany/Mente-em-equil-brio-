@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ROUTES, type Role } from "@/lib/auth/roles";
+import { UFS, cnpjValido, maiorDeIdade, normalizarCnpj } from "@/lib/documentos";
 import styles from "./login.module.css";
 
 type Mode = "login" | "signup";
@@ -29,7 +30,8 @@ const validEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 /* O papel vem da tabela `profiles` (protegida por RLS), não do user_metadata. */
 async function fetchRole(supabase: ReturnType<typeof createClient>, userId: string): Promise<Role | null> {
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (error) console.error("Erro ao ler o perfil:", error);
   const r = data?.role;
   return r === "cliente" || r === "profissional" ? r : null;
 }
@@ -40,6 +42,7 @@ function friendlyError(err: unknown): string {
   if (m.includes("already registered")) return "Este e-mail já tem cadastro. Use a aba Entrar.";
   if (m.includes("not confirmed")) return "Confirme seu e-mail pelo link que enviamos antes de entrar.";
   if (m.includes("rate limit") || m.includes("too many")) return "Muitas tentativas. Aguarde um instante e tente de novo.";
+  if (m.includes("database error")) return "Não foi possível criar a conta. Confira os dados e tente novamente.";
   if (m.includes("password")) return "A senha precisa ter pelo menos 8 caracteres.";
   if (m.includes("fetch") || m.includes("network")) return "Sem conexão. Verifique sua internet e tente novamente.";
   return "Não foi possível concluir. Tente novamente.";
@@ -53,6 +56,11 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
   const [registro, setRegistro] = useState("");
+  const [conselho, setConselho] = useState<"CRP" | "CRM">("CRP");
+  const [uf, setUf] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [instituicao, setInstituicao] = useState("");
+  const [nascimento, setNascimento] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -87,7 +95,14 @@ export default function LoginForm() {
     if (!password) return setMsg({ text: "Digite sua senha.", type: "error" });
     if (isSignup) {
       if (!name.trim()) return setMsg({ text: "Digite seu nome completo.", type: "error" });
-      if (isPro && !registro.trim()) return setMsg({ text: "Informe seu registro profissional.", type: "error" });
+      if (isPro) {
+        if (instituicao.trim().length < 3) return setMsg({ text: "Informe a instituição onde você atua.", type: "error" });
+        if (!cnpjValido(cnpj)) return setMsg({ text: "CNPJ inválido. Confira os dígitos.", type: "error" });
+        if (!uf) return setMsg({ text: "Escolha a UF do seu conselho.", type: "error" });
+        if (registro.length < 3) return setMsg({ text: "Informe o número do seu registro (só números).", type: "error" });
+      } else if (!maiorDeIdade(nascimento)) {
+        return setMsg({ text: "O cadastro é para maiores de 18 anos. Confira a data de nascimento.", type: "error" });
+      }
       if (password.length < 8) return setMsg({ text: "A senha precisa ter pelo menos 8 caracteres.", type: "error" });
       if (!terms) return setMsg({ text: "Aceite os termos para criar sua conta.", type: "error" });
     }
@@ -112,9 +127,12 @@ export default function LoginForm() {
         router.push(ROUTES[role]);
         router.refresh();
       } else {
-                if (isPro) {
+        // avisa antes de tentar cadastrar um registro profissional que já existe
+        if (isPro) {
           const { data: livre, error: rpcError } = await supabase.rpc("registro_disponivel", {
-            p_registro: registro.trim(),
+            p_conselho: conselho,
+            p_uf: uf,
+            p_registro: registro,
           });
           if (rpcError) throw rpcError;
           if (livre === false) {
@@ -125,15 +143,22 @@ export default function LoginForm() {
             return;
           }
         }
+
         const { data, error } = await supabase.auth.signUp({
           email: mail,
           password,
           options: {
-            data: {
-              role,
-              full_name: name.trim(),
-              registro_profissional: isPro ? registro.trim() : null,
-            },
+            data: isPro
+              ? {
+                  role,
+                  full_name: name.trim(),
+                  conselho,
+                  registro_uf: uf,
+                  registro_profissional: registro,
+                  cnpj: normalizarCnpj(cnpj),
+                  instituicao_nome: instituicao.trim(),
+                }
+              : { role, full_name: name.trim(), data_nascimento: nascimento },
             emailRedirectTo: `${location.origin}/auth/callback?next=${ROUTES[role]}`,
           },
         });
@@ -152,6 +177,7 @@ export default function LoginForm() {
         setMsg({ text: "Enviamos um link de confirmação para o seu e-mail. Abra-o para ativar a conta.", type: "ok" });
       }
     } catch (err) {
+      console.error("Erro no login/cadastro:", err);
       setMsg({ text: friendlyError(err), type: "error" });
     } finally {
       setLoading(false);
@@ -226,17 +252,85 @@ export default function LoginForm() {
             )}
 
             {isSignup && isPro && (
+              <>
+                <div className={styles.field}>
+                  <label htmlFor="instituicao">Instituição onde você atua</label>
+                  <input
+                    id="instituicao"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="Ex.: Clínica Bem-Estar"
+                    maxLength={120}
+                    value={instituicao}
+                    onChange={(e) => setInstituicao(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="cnpj">CNPJ da instituição</label>
+                  <input
+                    id="cnpj"
+                    type="text"
+                    placeholder="00.000.000/0000-00"
+                    autoComplete="off"
+                    maxLength={18}
+                    value={cnpj}
+                    onChange={(e) => setCnpj(e.target.value.toUpperCase())}
+                  />
+                  <div className={styles.hint}>Aceita o CNPJ numérico e o novo formato com letras.</div>
+                </div>
+
+                <div className={styles.row2}>
+                  <div className={styles.field}>
+                    <label htmlFor="conselho">Conselho</label>
+                    <select id="conselho" value={conselho} onChange={(e) => setConselho(e.target.value as "CRP" | "CRM")}>
+                      <option value="CRP">CRP (Psicologia)</option>
+                      <option value="CRM">CRM (Medicina)</option>
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label htmlFor="uf">UF</label>
+                    <select id="uf" value={uf} onChange={(e) => setUf(e.target.value)}>
+                      <option value="">Escolha</option>
+                      {UFS.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="registro">Número do registro</label>
+                  <input
+                    id="registro"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Somente números"
+                    autoComplete="off"
+                    maxLength={10}
+                    value={registro}
+                    onChange={(e) => setRegistro(e.target.value.replace(/\D/g, ""))}
+                  />
+                  <div className={styles.hint}>
+                    Conferimos o registro no conselho e o CNPJ antes de liberar o acesso.
+                  </div>
+                </div>
+              </>
+            )}
+
+            {isSignup && !isPro && (
               <div className={styles.field}>
-                <label htmlFor="registro">Registro profissional</label>
+                <label htmlFor="nascimento">Data de nascimento</label>
                 <input
-                  id="registro"
-                  type="text"
-                  placeholder="Ex.: CRP 03/12345"
-                  autoComplete="off"
-                  value={registro}
-                  onChange={(e) => setRegistro(e.target.value)}
+                  id="nascimento"
+                  type="date"
+                  autoComplete="bday"
+                  value={nascimento}
+                  onChange={(e) => setNascimento(e.target.value)}
                 />
-                <div className={styles.hint}>Usamos para validar seu cadastro antes de liberar o acesso.</div>
+                <div className={styles.hint}>O cadastro é para maiores de 18 anos.</div>
               </div>
             )}
 
@@ -300,5 +394,5 @@ export default function LoginForm() {
         </div>
       </main>
     </div>
-   );
+  );
 }

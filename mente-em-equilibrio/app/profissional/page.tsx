@@ -7,7 +7,7 @@ import { chaveDoDia, type Consulta } from "@/lib/agenda";
 import styles from "@/components/area/area.module.css";
 
 async function Content() {
-  const { name, email, verificado } = await requireRole("profissional");
+  const { name, email, verificado, status, motivoRecusa } = await requireRole("profissional");
 
   const displayName = name?.trim() || email || "";
   const firstName = displayName.split(/[\s@]/)[0];
@@ -27,7 +27,13 @@ async function Content() {
   return (
     <>
       <AreaHeader displayName={displayName} />
-      <ProfissionalHome firstName={firstName} verificado={verificado} hoje={hoje} />
+        <ProfissionalHome
+        firstName={firstName}
+        verificado={verificado}
+        status={status}
+        motivoRecusa={motivoRecusa}
+        hoje={hoje}
+      />
     </>
   );
 }

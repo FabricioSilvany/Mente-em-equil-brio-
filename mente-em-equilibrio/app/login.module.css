@@ -387,3 +387,43 @@
 @media (prefers-reduced-motion: reduce) {
   .page *, .side { transition: none !important; }
 }
+
+
+/* campos novos do cadastro: lista de opções, data e duas colunas */
+.card select,
+.card input[type="date"] {
+  width: 100%;
+  min-height: 48px;
+  font: inherit;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  transition: border-color 0.2s;
+}
+
+.card select:hover,
+.card input[type="date"]:hover {
+  border-color: #a9bfc4;
+}
+
+.card select:focus-visible,
+.card input[type="date"]:focus-visible {
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+}
+
+@media (max-width: 420px) {
+  .row2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

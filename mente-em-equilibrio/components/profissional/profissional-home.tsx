@@ -9,7 +9,7 @@ type Atalho = {
   title: string;
   text: string;
   href?: string;
-  semValidacao?: boolean; // disponível mesmo antes da validação do cadastro
+  semValidacao?: boolean;
 };
 
 const ATALHOS: Atalho[] = [
@@ -42,10 +42,12 @@ const ATALHOS: Atalho[] = [
 type Props = {
   firstName: string;
   verificado: boolean;
+  status: string;
+  motivoRecusa: string | null;
   hoje: Consulta[];
 };
 
-export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
+export function ProfissionalHome({ firstName, verificado, status, motivoRecusa, hoje }: Props) {
   return (
     <main className={styles.container}>
       <section className={styles.hero}>
@@ -55,7 +57,7 @@ export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
           Aqui você organiza a sua rotina e acompanha o cuidado dos seus pacientes.
         </p>
         <span className={`${styles.status} ${verificado ? styles.statusOk : styles.statusPending}`}>
-          {verificado ? "Cadastro verificado" : "Cadastro em análise"}
+          {verificado ? "Cadastro verificado" : status === "recusado" ? "Cadastro recusado" : "Cadastro em análise"}
         </span>
       </section>
 
@@ -84,13 +86,32 @@ export function ProfissionalHome({ firstName, verificado, hoje }: Props) {
         </section>
       ) : (
         <section className={styles.notice} aria-labelledby="analise">
-          <h2 id="analise" className={styles.noticeTitle}>
-            Estamos validando o seu registro profissional
-          </h2>
-          <p className={styles.noticeText}>
-            Assim que a validação for concluída, o acesso completo será liberado nesta tela. Enquanto isso, você
-            já pode explorar como ela vai ficar.
-          </p>
+          {status === "recusado" ? (
+            <>
+              <h2 id="analise" className={styles.noticeTitle}>
+                Não conseguimos validar o seu cadastro
+              </h2>
+              <p className={styles.noticeText}>
+                {motivoRecusa ? `Motivo informado na análise: ${motivoRecusa}. ` : ""}
+                Corrija os dados e envie de novo para uma nova análise.
+              </p>
+              <p style={{ margin: "12px 0 0" }}>
+                <Link href="/completar-cadastro" className={lista.cta}>
+                  Corrigir meus dados
+                </Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 id="analise" className={styles.noticeTitle}>
+                Estamos validando o seu registro profissional
+              </h2>
+              <p className={styles.noticeText}>
+                Conferimos o seu registro no conselho e o CNPJ da instituição. Assim que a validação for concluída,
+                o acesso completo será liberado nesta tela.
+              </p>
+            </>
+          )}
         </section>
       )}
 
